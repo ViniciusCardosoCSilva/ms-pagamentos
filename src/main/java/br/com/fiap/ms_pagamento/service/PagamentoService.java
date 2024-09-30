@@ -1,7 +1,9 @@
 package br.com.fiap.ms_pagamento.service;
 
 import br.com.fiap.ms_pagamento.dto.PagamentoDTO;
+import br.com.fiap.ms_pagamento.http.PedidoClient;
 import br.com.fiap.ms_pagamento.model.Pagamento;
+import br.com.fiap.ms_pagamento.model.Status;
 import br.com.fiap.ms_pagamento.repository.PagamentoRepository;
 import br.com.fiap.ms_pagamento.service.exception.DatabaseException;
 import br.com.fiap.ms_pagamento.service.exception.ResourceNotFoundException;
@@ -9,13 +11,18 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class PagamentoService {
+
+    @Autowired
+    private PedidoClient pedidoClient;
 
     @Autowired
     private PagamentoRepository repository;
@@ -55,7 +62,7 @@ public class PagamentoService {
         }
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.SUPPORTS)
     public void delete(Long id) {
         if (!repository.existsById(id)) {
             throw new ResourceNotFoundException("Recurso não encontrado! Id: " + id);
@@ -83,4 +90,20 @@ public class PagamentoService {
 //        Page<Pagamento> page = repository.findAll(pageable);
 //        return page.map(PagamentoDTO::new);
 //    }
+
+    @Transactional
+    public void confirmarPagamentoDePedido(Long id){
+
+        Optional<Pagamento> pagamento = repository.findById(id);
+
+        if (pagamento.isEmpty()){
+            throw new ResourceNotFoundException("Recurso não encontrado! Id: " + id);
+        }
+
+        pagamento.get().setStatus(Status.CONFIRMADO);
+        repository.save(pagamento.get());
+        pedidoClient.atualizarPagamentoDoPedido(pagamento.get().getPedidoId());
+
+    }
+
 }

@@ -64,4 +64,10 @@ public class PagamentoController {
 //        Page<PagamentoDTO> dto = service.findAll(pageable);
 //        return ResponseEntity.ok(dto);
 //    }
+
+    @PatchMapping("/{id}/confirmar")
+    public void confirmarPagamentoDoPedido(@PathVariable @NotNull Long id){
+        service.confirmarPagamentoDePedido(id);
+    }
+
 }
